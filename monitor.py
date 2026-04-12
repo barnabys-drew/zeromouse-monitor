@@ -1,9 +1,11 @@
 import argparse
+import json
 import os
 import sys
 import time
 import logging
 from datetime import datetime, timezone
+from pathlib import Path
 
 import requests
 
@@ -14,6 +16,7 @@ NTFY_TOPIC = os.environ["NTFY_TOPIC"]
 NTFY_SERVER = os.environ.get("NTFY_SERVER", "https://ntfy.sh")
 CHECK_INTERVAL = int(os.environ.get("CHECK_INTERVAL", "900"))
 NOTIFICATION_COOLDOWN = 3600  # re-notify at most once per hour
+STATE_FILE = Path(os.environ.get("STATE_FILE", "data/.zeromouse_state.json"))
 
 logging.basicConfig(
     level=logging.INFO,
@@ -22,6 +25,29 @@ logging.basicConfig(
     stream=sys.stdout,
 )
 log = logging.getLogger("zeromouse-monitor")
+
+
+def load_last_notified() -> float:
+    """Restore last notification timestamp from disk when present."""
+    try:
+        if not STATE_FILE.exists():
+            return 0.0
+        payload = json.loads(STATE_FILE.read_text(encoding="utf-8"))
+        return float(payload.get("last_notified", 0.0))
+    except (OSError, ValueError, json.JSONDecodeError):
+        return 0.0
+
+
+def save_last_notified(last_notified: float) -> None:
+    """Persist last notification timestamp for restart-safe cooldown."""
+    try:
+        STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
+        STATE_FILE.write_text(
+            json.dumps({"last_notified": last_notified, "updated_at": time.time()}),
+            encoding="utf-8",
+        )
+    except OSError:
+        return
 
 
 def fetch_availability() -> bool:
@@ -76,6 +102,7 @@ def run_check_cycle(last_notified: float) -> float:
                     f"{PRODUCT_URL}\n\n"
                     f"Checked at {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}",
                 )
+                save_last_notified(now)
                 return now
             log.info("Notification cooldown active — skipping.")
     except requests.RequestException as exc:
@@ -108,7 +135,10 @@ def main() -> None:
         log.info("Checking every %d seconds (%d minutes)", CHECK_INTERVAL, CHECK_INTERVAL // 60)
     log.info("Notifications via %s/%s", NTFY_SERVER, NTFY_TOPIC)
 
-    last_notified: float = 0.0
+    last_notified = load_last_notified()
+    if last_notified > 0:
+        elapsed = max(0, time.time() - last_notified)
+        log.info("Restored previous notification state (%.0fs ago).", elapsed)
     last_notified = run_check_cycle(last_notified)
     if args.once:
         return

@@ -34,6 +34,7 @@ NTFY_TOPIC=zeromouse-blade-drew
 | `NTFY_TOPIC`     | Your ntfy topic name (must match the app)| —                    |
 | `NTFY_SERVER`    | ntfy server URL                          | `https://ntfy.sh`    |
 | `CHECK_INTERVAL` | Seconds between checks                   | `900`                |
+| `STATE_FILE`     | Cooldown state path (restart-safe)       | `data/.zeromouse_state.json` |
 
 2. **Test that notifications reach your phone** (do this first!):
 
@@ -66,5 +67,6 @@ docker compose down
 - Fetches the product page HTML every `CHECK_INTERVAL` seconds.
 - If the text "Sold out" is **not found** on the page, it sends a push notification via [ntfy.sh](https://ntfy.sh).
 - After sending a notification, it waits at least 1 hour before sending another (to avoid spam).
+- The last notification timestamp is persisted to `STATE_FILE`, so restarts keep cooldown behavior.
 - The container auto-restarts on failure thanks to `restart: unless-stopped`.
 - No passwords or API keys are needed — just a topic name.

@@ -1,0 +1,32 @@
+name: Smoke Tests
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Compile source
+        run: python -m py_compile monitor.py
+
+      - name: CLI help smoke
+        env:
+          NTFY_TOPIC: ci-smoke-topic
+        run: python monitor.py --help
