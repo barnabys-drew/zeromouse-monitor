@@ -1,0 +1,8 @@
+services:
+  monitor:
+    build: .
+    restart: unless-stopped
+    environment:
+      - NTFY_TOPIC=${NTFY_TOPIC}
+      - NTFY_SERVER=${NTFY_SERVER:-https://ntfy.sh}
+      - CHECK_INTERVAL=${CHECK_INTERVAL:-900}
