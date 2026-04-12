@@ -3,6 +3,12 @@ services:
     build: .
     restart: unless-stopped
     environment:
-      - NTFY_TOPIC=zeromouse-blade-1e62
+      - NTFY_TOPIC=${NTFY_TOPIC:?NTFY_TOPIC must be set in .env}
       - NTFY_SERVER=${NTFY_SERVER:-https://ntfy.sh}
       - CHECK_INTERVAL=${CHECK_INTERVAL:-900}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('https://zeromouse.co/products/blade.json', timeout=10).raise_for_status()"]
+      interval: 30m
+      timeout: 15s
+      retries: 3
+      start_period: 60s

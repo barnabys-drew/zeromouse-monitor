@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 import requests
 
 PRODUCT_URL = "https://zeromouse.co/products/blade"
-SOLD_OUT_MARKER = "Sold out"
+PRODUCT_JSON_URL = "https://zeromouse.co/products/blade.json"
 
 NTFY_TOPIC = os.environ["NTFY_TOPIC"]
 NTFY_SERVER = os.environ.get("NTFY_SERVER", "https://ntfy.sh")
@@ -24,21 +24,15 @@ logging.basicConfig(
 log = logging.getLogger("zeromouse-monitor")
 
 
-def fetch_page() -> str:
-    headers = {
-        "User-Agent": (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/124.0.0.0 Safari/537.36"
-        )
-    }
-    resp = requests.get(PRODUCT_URL, headers=headers, timeout=30)
+def fetch_availability() -> bool:
+    """Return True if any variant is available. Uses Shopify JSON endpoint."""
+    resp = requests.get(PRODUCT_JSON_URL, timeout=30)
     resp.raise_for_status()
-    return resp.text
-
-
-def is_sold_out(html: str) -> bool:
-    return SOLD_OUT_MARKER in html
+    product = resp.json().get("product", {})
+    variants = product.get("variants", [])
+    if not variants:
+        raise ValueError("No variants found in product JSON — page structure may have changed")
+    return any(v.get("available") for v in variants)
 
 
 def send_notification(title: str, body: str) -> None:
@@ -69,8 +63,8 @@ def test_notification() -> None:
 def run_check_cycle(last_notified: float) -> float:
     """One fetch + optional notify. Returns updated last_notified timestamp."""
     try:
-        html = fetch_page()
-        if is_sold_out(html):
+        available = fetch_availability()
+        if not available:
             log.info("Still sold out.")
         else:
             log.info("*** AVAILABLE! The Blade appears to be in stock! ***")
@@ -86,6 +80,8 @@ def run_check_cycle(last_notified: float) -> float:
             log.info("Notification cooldown active — skipping.")
     except requests.RequestException as exc:
         log.error("Request failed: %s", exc)
+    except ValueError as exc:
+        log.error("Unexpected product structure: %s", exc)
     except Exception as exc:
         log.error("Unexpected error: %s", exc)
     return last_notified
