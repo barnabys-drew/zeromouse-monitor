@@ -3,6 +3,6 @@ services:
     build: .
     restart: unless-stopped
     environment:
-      - NTFY_TOPIC=zeromouser-blade-1e62
+      - NTFY_TOPIC=zeromouse-blade-1e62
       - NTFY_SERVER=${NTFY_SERVER:-https://ntfy.sh}
       - CHECK_INTERVAL=${CHECK_INTERVAL:-900}
