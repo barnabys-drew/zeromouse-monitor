@@ -21,4 +21,8 @@ This note captures the **intended deployment story** for this project and relate
 - [README.md](../README.md) — Docker, ntfy, `CHECK_INTERVAL`, `--once` for cron  
 - Shared hourly cron template (sibling path): `~/code/hourly-checks.crontab.example`
 
+## Tailscale + ntfy on the homelab
+
+Keep **`NTFY_TOPIC` in `.env`** and copy with **`tailscale file cp … chewbacca-1:`** (same as other env secrets). Full list: `../catastrophe-analyzer/docs/LOCAL_INFRA_ROADMAP.md`.
+
 Update this file when the homelab hostname, IP, or “single compose stack” layout stabilizes.
