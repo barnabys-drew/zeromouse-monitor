@@ -2,10 +2,12 @@ services:
   monitor:
     build: .
     restart: unless-stopped
+    env_file:
+      - .env
     volumes:
       - ./data:/app/data
     environment:
-      - NTFY_TOPIC=${NTFY_TOPIC:?NTFY_TOPIC must be set in .env}
+      - NTFY_TOPIC=${NTFY_TOPIC:?Set NTFY_TOPIC in .env — copy from .env.example}
       - NTFY_SERVER=${NTFY_SERVER:-https://ntfy.sh}
       - CHECK_INTERVAL=${CHECK_INTERVAL:-900}
       - STATE_FILE=${STATE_FILE:-data/.zeromouse_state.json}

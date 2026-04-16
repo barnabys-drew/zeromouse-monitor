@@ -23,7 +23,13 @@ Monitors [zeromouse.co/products/blade](https://zeromouse.co/products/blade) ever
 
 ## Quick Start
 
-1. Create a `.env` file in this directory:
+1. Create a `.env` file in this directory (start from the template):
+
+```bash
+cp .env.example .env
+```
+
+Then set at least `NTFY_TOPIC` (must match the topic you subscribed to in the ntfy app), for example:
 
 ```
 NTFY_TOPIC=zeromouse-blade-drew
