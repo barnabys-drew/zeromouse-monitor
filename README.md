@@ -35,12 +35,14 @@ Then set at least `NTFY_TOPIC` (must match the topic you subscribed to in the nt
 NTFY_TOPIC=zeromouse-blade-drew
 ```
 
-| Variable         | Description                              | Default              |
-|------------------|------------------------------------------|----------------------|
-| `NTFY_TOPIC`     | Your ntfy topic name (must match the app)| —                    |
-| `NTFY_SERVER`    | ntfy server URL                          | `https://ntfy.sh`    |
-| `CHECK_INTERVAL` | Seconds between checks                   | `900`                |
-| `STATE_FILE`     | Cooldown state path (restart-safe)       | `data/.zeromouse_state.json` |
+| Variable                  | Description                                            | Default              |
+|---------------------------|--------------------------------------------------------|----------------------|
+| `NTFY_TOPIC`              | Your ntfy topic name (must match the app)              | —                    |
+| `NTFY_SERVER`             | ntfy server URL                                        | `https://ntfy.sh`    |
+| `CHECK_INTERVAL`          | Seconds between checks                                 | `900`                |
+| `NOTIFY_COOLDOWN`         | Seconds between repeat in-stock notifications          | `3600`               |
+| `FAILURE_ALERT_THRESHOLD` | Consecutive failed checks before a "monitor is failing" alert | `8`           |
+| `STATE_FILE`              | Cooldown state path (restart-safe)                     | `data/.zeromouse_state.json` |
 
 2. **Test that notifications reach your phone** (do this first!):
 
@@ -70,9 +72,17 @@ docker compose down
 
 ## How It Works
 
-- Fetches the product page HTML every `CHECK_INTERVAL` seconds.
-- If the text "Sold out" is **not found** on the page, it sends a push notification via [ntfy.sh](https://ntfy.sh).
-- After sending a notification, it waits at least 1 hour before sending another (to avoid spam).
+- Fetches the Shopify product JSON ([`/products/blade.json`](https://zeromouse.co/products/blade.json)) every `CHECK_INTERVAL` seconds.
+- If **any variant** reports `available: true`, it sends a push notification via [ntfy.sh](https://ntfy.sh). Tapping the notification opens the product page.
+- After sending a notification, it waits `NOTIFY_COOLDOWN` seconds (default 1 hour) before sending another, to avoid spam.
 - The last notification timestamp is persisted to `STATE_FILE`, so restarts keep cooldown behavior.
+- **Watchdog:** if `FAILURE_ALERT_THRESHOLD` checks fail in a row (network errors, blocked requests, or an unexpected JSON shape), it sends a one-time "monitor is failing" alert so a silently broken monitor doesn't go unnoticed. The alert re-arms after the next successful check.
 - The container auto-restarts on failure thanks to `restart: unless-stopped`.
 - No passwords or API keys are needed — just a topic name.
+
+## Development
+
+```bash
+pip install -r requirements.txt pytest
+pytest
+```
