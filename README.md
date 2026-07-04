@@ -1,8 +1,16 @@
 # Zeromouse Blade Stock Monitor
 
-Monitors [zeromouse.co/products/blade](https://zeromouse.co/products/blade) every 15 minutes and sends a push notification to your phone when the mouse is available for purchase.
+[![Smoke Tests](https://github.com/barnabys-drew/zeromouse-monitor/actions/workflows/smoke.yml/badge.svg)](https://github.com/barnabys-drew/zeromouse-monitor/actions/workflows/smoke.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Python 3.12](https://img.shields.io/badge/python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 
-**Homelab / multi-tool context:** If you run several containers from `~/code` on a spare PC (shared scheduling, logs, optional GPU for other tools), see [docs/LOCAL_INFRA_ROADMAP.md](docs/LOCAL_INFRA_ROADMAP.md). The same note exists in **concentration-manager** and **catastrophe-analyzer**.
+Watches [zeromouse.co/products/blade](https://zeromouse.co/products/blade) and pushes a notification to your phone the moment the mouse is back in stock.
+
+- **Reliable checks** — reads Shopify's product JSON (variant availability), not fragile page-text scraping
+- **Phone push via [ntfy](https://ntfy.sh)** — no accounts, no API keys, just a topic name
+- **Spam-safe** — configurable cooldown between alerts, persisted across restarts
+- **Self-watching** — alerts you if the monitor itself starts failing, so it can't die silently
+- **One command** — `docker compose up -d` and forget about it
 
 ## Prerequisites
 
@@ -35,15 +43,6 @@ Then set at least `NTFY_TOPIC` (must match the topic you subscribed to in the nt
 NTFY_TOPIC=zeromouse-blade-drew
 ```
 
-| Variable                  | Description                                            | Default              |
-|---------------------------|--------------------------------------------------------|----------------------|
-| `NTFY_TOPIC`              | Your ntfy topic name (must match the app)              | —                    |
-| `NTFY_SERVER`             | ntfy server URL                                        | `https://ntfy.sh`    |
-| `CHECK_INTERVAL`          | Seconds between checks                                 | `900`                |
-| `NOTIFY_COOLDOWN`         | Seconds between repeat in-stock notifications          | `3600`               |
-| `FAILURE_ALERT_THRESHOLD` | Consecutive failed checks before a "monitor is failing" alert | `8`           |
-| `STATE_FILE`              | Cooldown state path (restart-safe)                     | `data/.zeromouse_state.json` |
-
 2. **Test that notifications reach your phone** (do this first!):
 
 ```bash
@@ -70,6 +69,17 @@ docker compose logs -f
 docker compose down
 ```
 
+## Configuration
+
+| Variable                  | Description                                            | Default              |
+|---------------------------|--------------------------------------------------------|----------------------|
+| `NTFY_TOPIC`              | Your ntfy topic name (must match the app)              | —                    |
+| `NTFY_SERVER`             | ntfy server URL                                        | `https://ntfy.sh`    |
+| `CHECK_INTERVAL`          | Seconds between checks                                 | `900`                |
+| `NOTIFY_COOLDOWN`         | Seconds between repeat in-stock notifications          | `3600`               |
+| `FAILURE_ALERT_THRESHOLD` | Consecutive failed checks before a "monitor is failing" alert | `8`           |
+| `STATE_FILE`              | Cooldown state path (restart-safe)                     | `data/.zeromouse_state.json` |
+
 ## How It Works
 
 - Fetches the Shopify product JSON ([`/products/blade.json`](https://zeromouse.co/products/blade.json)) every `CHECK_INTERVAL` seconds.
@@ -86,3 +96,17 @@ docker compose down
 pip install -r requirements.txt pytest
 pytest
 ```
+
+Run a single check without the daemon loop (useful for cron):
+
+```bash
+python monitor.py --once
+```
+
+## Homelab Notes
+
+If you run several containers from `~/code` on a spare PC (shared scheduling, logs, optional GPU for other tools), see [docs/LOCAL_INFRA_ROADMAP.md](docs/LOCAL_INFRA_ROADMAP.md). The same note exists in **concentration-manager** and **catastrophe-analyzer**.
+
+## License
+
+[MIT](LICENSE)
