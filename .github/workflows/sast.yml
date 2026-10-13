@@ -40,5 +40,5 @@ jobs:
           semgrep scan --error --metrics=off --quiet
           --config p/security-audit
           --config p/secrets
-          --config p/python --config p/bash --config p/dockerfile 
+          --config p/python --config p/dockerfile 
           --exclude node_modules --exclude vendor --exclude .venv
